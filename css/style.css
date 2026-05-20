@@ -1,0 +1,270 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    overflow: hidden;
+}
+
+#viz-container {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+
+.ui-layer {
+    position: relative;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.ui-element {
+    pointer-events: auto;
+}
+
+#tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 50;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+/* Custom Scrollbar for Info Panel */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ========== MOBILE RESPONSIVE STYLES ========== */
+
+/* Mobile: Stack header elements vertically */
+@media (max-width: 768px) {
+    .ui-layer {
+        padding: 1rem !important;
+    }
+
+    /* Header becomes column layout on mobile */
+    header.ui-element {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem;
+    }
+
+    /* Title section */
+    header.ui-element>div:first-child h1 {
+        font-size: 1.5rem !important;
+    }
+
+    header.ui-element>div:first-child p {
+        font-size: 0.75rem !important;
+    }
+
+    /* Search bar - full width on mobile */
+    .search-container-mobile {
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Header controls row - hide some elements on mobile */
+    .header-controls {
+        justify-content: flex-end;
+    }
+
+    /* Hide sync status text on mobile, keep dot */
+    #sync-status span:last-child {
+        display: none;
+    }
+
+    #sync-status {
+        padding: 0.5rem;
+    }
+
+    /* Reset button - smaller on mobile */
+    #reset-view-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    /* Filter panel - full width at bottom on mobile */
+    #filter-panel {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        max-width: 100% !important;
+        border-radius: 1rem 1rem 0 0 !important;
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+
+    /* Filter toggle button - visible on mobile */
+    #filter-toggle-btn {
+        position: fixed !important;
+        bottom: 1rem !important;
+        left: 1rem !important;
+    }
+
+    /* Info panel - full screen overlay on mobile */
+    #info-panel {
+        top: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        border-radius: 0 !important;
+        transform: translateY(100%) !important;
+    }
+
+    #info-panel:not(.hidden) {
+        transform: translateY(0) !important;
+    }
+
+    /* Help modal - full width on mobile */
+    #help-modal>div>div {
+        max-width: 100% !important;
+        margin: 1rem !important;
+        max-height: calc(100vh - 2rem);
+    }
+
+    /* Tooltip - smaller on mobile */
+    #tooltip>div {
+        max-width: 200px !important;
+        font-size: 0.75rem !important;
+    }
+}
+
+/* ========== DISCOVER PAGE STYLES ========== */
+
+#discover-viz {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+
+/* Pulse ring animation for leader node */
+@keyframes pulse-ring {
+    0% { stroke-opacity: 0.3; r: attr(r); }
+    50% { stroke-opacity: 0.1; }
+    100% { stroke-opacity: 0.3; }
+}
+
+/* Discovery progress log */
+@keyframes step-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+.step-pulse {
+    animation: step-pulse 1.2s ease-in-out infinite;
+}
+
+/* Discover search panel autocomplete */
+#discover-results .discover-result-item:hover {
+    background-color: #f8fafc;
+}
+
+/* Relationship modal responsive */
+@media (max-width: 768px) {
+    #relationship-modal .modal-content {
+        max-width: calc(100% - 2rem) !important;
+        margin: 1rem;
+    }
+
+    #relationship-modal .grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ========== BACKTEST PAGE STYLES ========== */
+
+/* P&L colors */
+.pnl-positive { color: #16a34a; }
+.pnl-negative { color: #dc2626; }
+
+.pnl-hero-positive {
+    color: #16a34a;
+    text-shadow: 0 0 20px rgba(22, 163, 74, 0.15);
+}
+.pnl-hero-negative {
+    color: #dc2626;
+    text-shadow: 0 0 20px rgba(220, 38, 38, 0.15);
+}
+
+/* Trade row hover */
+.trade-row:hover { background-color: #f8fafc; }
+
+/* Holding period pill buttons */
+.holding-pill { transition: all 0.15s ease; }
+
+/* Backtest search autocomplete */
+#search-results .search-result-item:hover {
+    background-color: #f8fafc;
+}
+
+/* Backtest results page scrolls */
+#results-container {
+    overflow-y: auto;
+    height: 100vh;
+}
+
+/* Responsive backtest results */
+@media (max-width: 768px) {
+    .backtest-results-table {
+        font-size: 0.75rem;
+    }
+    .backtest-results-table th,
+    .backtest-results-table td {
+        padding: 0.5rem 0.75rem;
+    }
+    #rationale-modal .modal-content {
+        max-width: calc(100% - 2rem) !important;
+        margin: 1rem;
+    }
+    #rationale-modal .grid-cols-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Small mobile (< 480px) */
+@media (max-width: 480px) {
+    .ui-layer {
+        padding: 0.75rem !important;
+    }
+
+    header.ui-element>div:first-child h1 {
+        font-size: 1.25rem !important;
+    }
+
+    /* Hide Reset View button on very small screens */
+    #reset-view-btn {
+        display: none;
+    }
+
+    /* Make info button smaller */
+    #info-btn {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    #info-btn svg {
+        width: 1rem;
+        height: 1rem;
+    }
+}

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymarket Network Visualization</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Visualization Container -->
+    <div id="viz-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay"
+        class="fixed inset-0 bg-slate-50 flex items-center justify-center z-50 transition-opacity duration-500">
+        <div class="text-center">
+            <!-- Animated Odds Chart -->
+            <div class="relative w-48 h-24 mx-auto mb-6">
+                <svg viewBox="0 0 210 100" class="w-full h-full overflow-visible">
+                    <!-- Grid lines -->
+                    <line x1="0" y1="50" x2="200" y2="50" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4" />
+
+                    <!-- Green line (animated) -->
+                    <path class="odds-line-green" d="M0,60 Q25,45 50,55 T100,40 T150,50 T195,35" fill="none"
+                        stroke="#22c55e" stroke-width="2.5" stroke-linecap="round">
+                        <animate attributeName="d" values="M0,60 Q25,45 50,55 T100,40 T150,50 T195,35;
+                                         M0,55 Q25,50 50,40 T100,55 T150,35 T195,45;
+                                         M0,45 Q25,55 50,50 T100,35 T150,55 T195,40;
+                                         M0,60 Q25,45 50,55 T100,40 T150,50 T195,35" dur="2s"
+                            repeatCount="indefinite" />
+                    </path>
+
+                    <!-- Red line (animated) -->
+                    <path class="odds-line-red" d="M0,40 Q25,55 50,45 T100,60 T150,50 T195,65" fill="none"
+                        stroke="#ef4444" stroke-width="2.5" stroke-linecap="round">
+                        <animate attributeName="d" values="M0,40 Q25,55 50,45 T100,60 T150,50 T195,65;
+                                         M0,45 Q25,50 50,60 T100,45 T150,65 T195,55;
+                                         M0,55 Q25,45 50,50 T100,65 T150,45 T195,60;
+                                         M0,40 Q25,55 50,45 T100,60 T150,50 T195,65" dur="2s"
+                            repeatCount="indefinite" />
+                    </path>
+
+                    <!-- Pulsing dots at end of lines -->
+                    <circle r="4" fill="#22c55e">
+                        <animate attributeName="cx" values="195;195;195" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="cy" values="35;45;40;35" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite" />
+                    </circle>
+                    <circle r="4" fill="#ef4444">
+                        <animate attributeName="cx" values="195;195;195" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="cy" values="65;55;60;65" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite" />
+                    </circle>
+                </svg>
+            </div>
+            <p class="text-slate-600 font-medium">Loading markets...</p>
+            <p class="text-slate-400 text-sm mt-1">Mapping correlations</p>
+        </div>
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="ui-layer flex flex-col h-screen p-4 md:p-6 justify-between">
+
+        <!-- Header -->
+        <header class="ui-element flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+            <!-- Title Row (Title + Controls on mobile) -->
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-xl md:text-3xl font-bold text-slate-900 tracking-tight">Polymarket Network</h1>
+                    <p class="text-slate-500 text-xs md:text-sm mt-1">Live Market Correlation Visualizer</p>
+                </div>
+
+                <!-- Controls (visible on right on mobile) -->
+                <div class="flex gap-2 md:hidden">
+                    <div id="sync-status-mobile"
+                        class="flex items-center gap-2 bg-white/90 px-2 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    </div>
+                    <button id="info-btn-mobile"
+                        class="w-8 h-8 flex items-center justify-center bg-white hover:bg-slate-50 text-slate-600 rounded-lg border border-slate-200 shadow-sm"
+                        title="Help & Info">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative flex-1 max-w-full md:max-w-md md:mx-8">
+                <div class="relative">
+                    <input type="text" id="market-search" placeholder="Search markets..."
+                        class="w-full px-4 py-2 pl-10 bg-white border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                        autocomplete="off">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <!-- Search Results Dropdown -->
+                <div id="search-results"
+                    class="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 md:max-h-80 overflow-y-auto hidden z-50">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Desktop Controls (hidden on mobile) -->
+            <div class="hidden md:flex gap-3">
+                <a href="discover.html"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Discover
+                </a>
+                <a href="backtest.html"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Backtest
+                </a>
+                <button id="reset-view-btn"
+                    class="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-200 shadow-sm hover:shadow-md">
+                    Reset View
+                </button>
+                <div id="sync-status"
+                    class="flex items-center gap-2 bg-white/90 px-3 py-2 rounded-lg border border-slate-200 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-xs text-slate-500">Synced <span id="last-sync-time"
+                            class="font-medium text-slate-700">--</span></span>
+                </div>
+                <button id="info-btn"
+                    class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 text-slate-600 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-colors"
+                    title="Help & Info">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Filter Toggle Button (visible on mobile, hidden when panel is open) -->
+        <button id="filter-toggle-btn"
+            class="ui-element fixed bottom-4 left-4 z-30 md:hidden w-12 h-12 bg-white/90 backdrop-blur-md border border-slate-200 rounded-full shadow-lg flex items-center justify-center hover:bg-slate-50 transition-colors"
+            title="Show Filters">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+        </button>
+
+        <!-- Legend / Controls (Bottom Left on desktop, slide-up panel on mobile) -->
+        <div id="filter-panel"
+            class="ui-element fixed md:relative bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:right-auto bg-white/95 md:bg-white/90 backdrop-blur-md border-t md:border border-slate-200 p-4 rounded-t-xl md:rounded-xl shadow-lg md:max-w-xs space-y-4 z-40 hidden md:block">
+
+            <!-- Header with Minimize Button -->
+            <div class="flex justify-between items-center">
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filters</h3>
+                <button id="minimize-filter-btn" class="p-1 hover:bg-slate-100 rounded transition-colors"
+                    title="Minimize">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="mb-3">
+                <label class="text-xs text-slate-400 block mb-1">Categories</label>
+                <div class="flex flex-wrap gap-1" id="category-filters">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Volume Filter -->
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">Min Volume: <span id="vol-display"
+                        class="text-slate-700 font-mono">$50k</span></label>
+                <input type="range" id="volume-filter" min="50000" max="1000000" step="10000" value="50000"
+                    class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+            </div>
+
+            <div class="h-px bg-slate-100"></div>
+
+            <!-- Legend -->
+            <div>
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Legend</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                        <span class="text-slate-600">Market Node (Size = Volume)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 h-px bg-slate-400"></span>
+                        <span class="text-slate-600">Correlation (Thickness)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Info Panel (Hidden by default) -->
+    <div id="info-panel"
+        class="ui-element fixed right-0 md:right-6 bottom-0 md:top-24 md:bottom-6 w-full md:w-80 max-h-[70vh] md:max-h-none bg-white backdrop-blur-xl border-t md:border border-slate-200 shadow-2xl rounded-t-2xl md:rounded-xl transform translate-y-full md:translate-y-0 md:translate-x-full transition-transform duration-300 ease-in-out flex flex-col overflow-hidden hidden z-50">
+        <!-- Mobile Header with Close Button -->
+        <div class="flex items-center justify-between p-4 border-b border-slate-100 md:hidden">
+            <span class="text-sm font-medium text-slate-500">Market Details</span>
+            <button id="close-panel-btn-mobile"
+                class="p-2 -mr-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <!-- Content injected by JS -->
+        <div class="p-4 md:p-6 overflow-y-auto flex-1" id="info-content">
+            <div class="flex items-center justify-center h-full text-slate-400">
+                Select a market to view details
+            </div>
+        </div>
+        <!-- Desktop Close Button (hidden on mobile) -->
+        <button id="close-panel-btn"
+            class="hidden md:block absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Correlation Chart Modal -->
+    <div id="correlation-chart-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div
+            class="modal-content bg-white rounded-2xl shadow-2xl w-[800px] max-w-[90vw] transform transition-all duration-200 scale-95 opacity-0">
+            <!-- Header -->
+            <div class="flex justify-between items-start p-6 border-b border-slate-200">
+                <div>
+                    <h2 class="text-sm text-slate-500 mb-1">Correlation Analysis</h2>
+                    <div id="chart-title" class="text-lg font-semibold leading-tight"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="chart-correlation" class="px-3 py-1 rounded-full text-sm font-semibold"></span>
+                    <button id="close-chart-btn" class="text-slate-400 hover:text-slate-700 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Chart Container -->
+            <div id="chart-container" class="p-6 pb-8"></div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div id="tooltip" class="opacity-0 transform scale-95 hidden">
+        <div class="bg-white/95 backdrop-blur-md border border-slate-200 p-4 rounded-xl shadow-xl w-64">
+            <div class="flex justify-between items-start mb-2">
+                <h3 id="tooltip-title" class="font-bold text-slate-900 text-sm leading-tight"></h3>
+                <span id="tooltip-category"
+                    class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium border border-slate-200"></span>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-500">Probability</span>
+                    <span id="tooltip-prob" class="font-mono font-semibold text-green-600"></span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-500">Volume</span>
+                    <span id="tooltip-vol" class="font-mono text-slate-700"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[85vh] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100">
+                <h2 class="text-xl font-bold text-slate-900">How to Use</h2>
+                <button id="close-help-btn" class="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="px-6 py-5 overflow-y-auto max-h-[60vh] space-y-6">
+                <!-- Quick Start -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Start</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-3 text-sm">
+                            <span
+                                class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-lg">🖱️</span>
+                            <div><span class="font-medium text-slate-700">Click a node</span> <span
+                                    class="text-slate-500">— View market details & correlations</span></div>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm">
+                            <span
+                                class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center text-lg">📈</span>
+                            <div><span class="font-medium text-slate-700">Click a link</span> <span
+                                    class="text-slate-500">— See correlation chart between markets</span></div>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm">
+                            <span
+                                class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center text-lg">🔍</span>
+                            <div><span class="font-medium text-slate-700">Search</span> <span class="text-slate-500">—
+                                    Find markets by name</span></div>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm">
+                            <span
+                                class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-lg">🎚️</span>
+                            <div><span class="font-medium text-slate-700">Filters</span> <span class="text-slate-500">—
+                                    Filter by category or volume</span></div>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm">
+                            <span
+                                class="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-lg">🔄</span>
+                            <div><span class="font-medium text-slate-700">Scroll/Drag</span> <span
+                                    class="text-slate-500">— Zoom and pan the visualization</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Understanding the Viz -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Understanding the
+                        Visualization</h3>
+                    <div class="bg-slate-50 rounded-xl p-4 space-y-3 text-sm">
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-4 bg-blue-500 rounded-full"></span>
+                            <span class="text-slate-600"><span class="font-medium">Node size</span> = Trading
+                                volume</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-1 bg-slate-400 rounded"></span>
+                            <span class="text-slate-600"><span class="font-medium">Link thickness</span> = Correlation
+                                strength (0.5 - 1.0)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data & Methodology -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Data & Correlation
+                    </h3>
+                    <div class="space-y-3 text-sm text-slate-600">
+                        <p>
+                            Markets are filtered to show those with <strong>>$50k volume</strong> and <strong>5-95%
+                                probability</strong>.
+                            Data refreshes automatically every 10 minutes from Polymarket.
+                        </p>
+                        <div class="bg-slate-50 rounded-lg p-3 space-y-2">
+                            <p class="font-medium text-slate-700">How Correlations Work:</p>
+                            <p class="text-xs">
+                                We use <strong>log-return correlation</strong> — this measures whether markets
+                                move <em>up and down on the same days</em>, not just whether they trend together.
+                            </p>
+                            <p class="text-xs">
+                                Only pairs with <strong>>50% correlation</strong> are shown as connected.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Main Entry Point -->
+    <script type="module" src="js/main.js?v=3"></script>
+</body>
+
+</html>
